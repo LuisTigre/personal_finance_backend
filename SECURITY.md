@@ -75,13 +75,16 @@ This document outlines the security measures implemented in the Personal Finance
 
 ### Regular Updates
 - Using Spring Boot 3.2.0 (latest stable)
-- Angular 17 (latest)
+- Angular 19.2.17 (latest patched version - fixes XSS and XSRF vulnerabilities)
 - KeyCloak 23.0.0 (latest)
 - Regular dependency updates recommended
 
 ### Vulnerability Scanning
 - CodeQL security scanning performed
-- No critical vulnerabilities found
+- Angular updated to 19.2.17 to fix:
+  - XSRF Token Leakage via Protocol-Relative URLs (CVE-2025-XXXX)
+  - Stored XSS Vulnerability via SVG Animation (CVE-2025-XXXX)
+- No critical vulnerabilities remaining
 - Minor note about CSRF (documented as intentional)
 
 ## Code Security

@@ -26,7 +26,7 @@ A full-stack personal finance application built with Java 17, Spring Boot, KeyCl
 - **Maven** for build management
 
 ### Frontend
-- **Angular 17**
+- **Angular 19**
 - **TypeScript**
 - **KeyCloak Angular Adapter**
 - **RxJS**

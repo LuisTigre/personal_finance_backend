@@ -15,7 +15,7 @@ This repository contains a complete personal finance application built with mode
 - **Maven** - Build and dependency management
 
 ### Frontend
-- **Angular 17** - Latest Angular with standalone components
+- **Angular 19** - Latest Angular with standalone components (patched for XSS/XSRF vulnerabilities)
 - **TypeScript** - Type-safe JavaScript
 - **RxJS** - Reactive programming
 - **KeyCloak Angular** - Authentication adapter
