@@ -1,0 +1,34 @@
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+/.idea/
+*.iml
+/.classpath
+/.project
+/.settings/
+.vscode/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+
+# Uploads and generated files
+/uploads/
+
+# Spring Boot
+/*.jar
+
+# IntelliJ
+out/
+
+# Others
+node_modules/
+
