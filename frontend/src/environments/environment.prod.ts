@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://localhost:8081/api',
+  apiUrl: '/api',  // Use relative URL for production (proxied by Nginx)
   keycloak: {
-    url: 'http://localhost:8080',
+    url: window.location.origin.replace('app.', 'auth.'),  // Dynamic KeyCloak URL
     realm: 'personal-finance',
     clientId: 'personal-finance-app'
   }

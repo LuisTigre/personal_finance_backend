@@ -18,13 +18,11 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
-    "keycloak-angular": "^15.0.0",
+    "keycloak-angular": "^15.2.1",
     "keycloak-js": "^23.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "zone.js": "~0.14.2",
-    "chart.js": "^4.4.0",
-    "ng2-charts": "^5.0.4"
+    "zone.js": "~0.14.2"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^17.0.0",

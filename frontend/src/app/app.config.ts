@@ -1,8 +1,10 @@
 import { APP_INITIALIZER, ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Routes } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { KeycloakService } from 'keycloak-angular';
 import { environment } from '../environments/environment';
+import { DashboardComponent } from './components/dashboard.component';
+import { AuthGuard } from './guards/auth.guard';
 
 function initializeKeycloak(keycloak: KeycloakService) {
   return () =>
@@ -23,9 +25,14 @@ function initializeKeycloak(keycloak: KeycloakService) {
     });
 }
 
+const routes: Routes = [
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] }
+];
+
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter([]),
+    provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     KeycloakService,
     {
