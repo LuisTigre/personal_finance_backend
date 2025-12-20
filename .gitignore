@@ -32,3 +32,8 @@ out/
 # Others
 node_modules/
 
+
+# Large local Keycloak archive (do not commit)
+keycloak-full-26.4.7.tar
+*.tar
+
