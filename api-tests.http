@@ -1,0 +1,35 @@
+
+
+####### LOGIN (KNOWN KC USER) ########
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json; charset=utf-8
+Accept: application/json
+
+{
+  "email": "alice@example.com",
+  "password": "password"
+}
+
+########  REGISTER USER ########
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json; charset=utf-8
+Accept: application/json
+
+{
+  "firstName": "Henry",
+  "lastName": "Fordes",
+  "email": "ford10@mail.com",
+  "password": "tigger123"
+}
+
+######### GET KEYCLOAK TOKEN (Persfin realm; ROPC)
+POST http://127.0.0.1:8888/realms/Persfin/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=personal-finance-api&client_secret=personal-finance-secret&username=alice@example.com&password=password
+
+######### GET KEYCLOAK TOKEN (MASTER REALM) #########
+POST http://127.0.0.1:8888/realms/master/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=admin-cli&username=admin&password=admin

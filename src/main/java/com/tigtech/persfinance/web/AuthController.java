@@ -29,19 +29,30 @@ public class AuthController {
     private final RestTemplate restTemplate = new RestTemplate();
     private final AuthenticationManager authenticationManager;
 
-    // Hardcode the Keycloak configuration to match the working curl test.
-    // Once everything works, these can be moved back to properties or env variables.
-    private static final String KC_CLIENT_ID = "personal-finance-api";
-    private static final String KC_CLIENT_SECRET = "HNSiuiRWNqt55vdawZtu8uJ4O3VfJfAZ";
-    private static final String KC_TOKEN_URI = "http://127.0.0.1:8888/realms/Persfin/protocol/openid-connect/token";
+    // Keycloak configuration (property/env driven so it works in Docker Compose too)
+    @org.springframework.beans.factory.annotation.Value("${keycloak.client-id:personal-finance-api}")
+    private String kcClientId;
 
-    // Keycloak admin base URL for managing users
-    private static final String KC_ADMIN_BASE = "http://127.0.0.1:8888/admin/realms/Persfin";
-    // Admin token endpoint (master realm) and client used to obtain an admin access token
-    private static final String KC_ADMIN_TOKEN_URI = "http://127.0.0.1:8888/realms/master/protocol/openid-connect/token";
-    private static final String KC_ADMIN_CLIENT_ID = "admin-cli";
-    private static final String KC_ADMIN_USERNAME = "admin";
-    private static final String KC_ADMIN_PASSWORD = "admin"; // dev only; change in production
+    @org.springframework.beans.factory.annotation.Value("${keycloak.client-secret:personal-finance-secret}")
+    private String kcClientSecret;
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.token-uri:http://localhost:8888/realms/Persfin/protocol/openid-connect/token}")
+    private String kcTokenUri;
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.admin-base:http://localhost:8888/admin/realms/Persfin}")
+    private String kcAdminBase;
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.admin-token-uri:http://localhost:8888/realms/master/protocol/openid-connect/token}")
+    private String kcAdminTokenUri;
+
+    @org.springframework.beans.factory.annotation.Value("${keycloak.admin-client-id:admin-cli}")
+    private String kcAdminClientId;
+
+    @org.springframework.beans.factory.annotation.Value("${KEYCLOAK_ADMIN:admin}")
+    private String kcAdminUsername;
+
+    @org.springframework.beans.factory.annotation.Value("${KEYCLOAK_ADMIN_PASSWORD:admin}")
+    private String kcAdminPassword;
 
     public AuthController(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
@@ -110,7 +121,7 @@ public class AuthController {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(kcUser, headers);
         System.out.println("DEBUG: Creating user in Keycloak for email=" + request.getEmail());
 
-        ResponseEntity<Void> response = restTemplate.postForEntity(KC_ADMIN_BASE + "/users", entity, Void.class);
+        ResponseEntity<Void> response = restTemplate.postForEntity(kcAdminBase + "/users", entity, Void.class);
         System.out.println("DEBUG: Keycloak admin create user status=" + response.getStatusCode());
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IllegalStateException("Keycloak user creation failed with status " + response.getStatusCode());
@@ -123,13 +134,13 @@ public class AuthController {
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");
-        form.add("client_id", KC_ADMIN_CLIENT_ID);
-        form.add("username", KC_ADMIN_USERNAME);
-        form.add("password", KC_ADMIN_PASSWORD);
+        form.add("client_id", kcAdminClientId);
+        form.add("username", kcAdminUsername);
+        form.add("password", kcAdminPassword);
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
         try {
-            ResponseEntity<Map> resp = restTemplate.postForEntity(KC_ADMIN_TOKEN_URI, entity, Map.class);
+            ResponseEntity<Map> resp = restTemplate.postForEntity(kcAdminTokenUri, entity, Map.class);
             if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null || !resp.getBody().containsKey("access_token")) {
                 throw new IllegalStateException("Failed to obtain admin access token from Keycloak, status=" + resp.getStatusCode());
             }
@@ -157,23 +168,23 @@ public class AuthController {
     }
 
     private ResponseEntity<?> doKeycloakPasswordGrant(String username, String password) {
-        System.out.println("DEBUG: calling Keycloak token endpoint '" + KC_TOKEN_URI + "' for user='" + username + "'");
-        System.out.println("DEBUG: using client_id='" + KC_CLIENT_ID + "'");
-        System.out.println("DEBUG: client_secret is " + (KC_CLIENT_SECRET != null && !KC_CLIENT_SECRET.isBlank() ? "PRESENT" : "MISSING"));
+        System.out.println("DEBUG: calling Keycloak token endpoint '" + kcTokenUri + "' for user='" + username + "'");
+        System.out.println("DEBUG: using client_id='" + kcClientId + "'");
+        System.out.println("DEBUG: client_secret is " + (kcClientSecret != null && !kcClientSecret.isBlank() ? "PRESENT" : "MISSING"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "password");
-        form.add("client_id", KC_CLIENT_ID);
-        form.add("client_secret", KC_CLIENT_SECRET);
+        form.add("client_id", kcClientId);
+        form.add("client_secret", kcClientSecret);
         form.add("username", username);
         form.add("password", password);
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
         try {
-            ResponseEntity<String> resp = restTemplate.postForEntity(KC_TOKEN_URI, entity, String.class);
+            ResponseEntity<String> resp = restTemplate.postForEntity(kcTokenUri, entity, String.class);
             System.out.println("DEBUG: Keycloak token endpoint returned status=" + resp.getStatusCode().value());
             System.out.println("DEBUG: Keycloak response headers: " + resp.getHeaders());
             return ResponseEntity.status(resp.getStatusCode()).body(resp.getBody());
