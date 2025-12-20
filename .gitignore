@@ -37,3 +37,7 @@ node_modules/
 keycloak-full-26.4.7.tar
 *.tar
 
+
+# prevent committing large local archive
+keycloak-full-26.4.7.tar
+
