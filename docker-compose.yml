@@ -2,6 +2,7 @@ services:
   app:
     build: .
     container_name: persfinance_app
+    restart: on-failure
     ports:
       - "${APP_PORT:-8080}:8080"
     env_file:
@@ -25,6 +26,15 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}
       - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
       - KEYCLOAK_TOKEN_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+
+      # AuthProvider specific config (overriding localhost defaults for Docker)
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-personal-finance-api}
+      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-personal-finance-secret}
+      - KEYCLOAK_ADMIN_BASE=http://keycloak:8080/admin/realms/${KEYCLOAK_REALM}
+      - KEYCLOAK_ADMIN_TOKEN_URI=http://keycloak:8080/realms/master/protocol/openid-connect/token
+      - KEYCLOAK_ADMIN_CLIENT_ID=admin-cli
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
