@@ -1,6 +1,9 @@
 {
   "realm": "Persfin",
   "enabled": true,
+  "accessTokenLifespan": 2592000,
+  "ssoSessionIdleTimeout": 2592000,
+  "ssoSessionMaxLifespan": 2592000,
 
   "roles": {
     "realm": [
