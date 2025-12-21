@@ -25,7 +25,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<UserResponse> list() {
         return userRepository.findAll().stream().map(this::toDto).collect(Collectors.toList());
     }
@@ -62,4 +62,3 @@ public class UserController {
         return r;
     }
 }
-

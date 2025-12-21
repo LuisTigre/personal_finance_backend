@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Must match the `iss` claim in the Keycloak access token exactly
+          issuer-uri: http://keycloak:8888/realms/Persfin
