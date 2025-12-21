@@ -5,9 +5,11 @@ services:
     restart: on-failure
     ports:
       - "${APP_PORT:-8080}:8080"
+      - "5005:5005"
     env_file:
       - .env
     environment:
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       # DB connectivity (service-name based)
       - DB_HOST=postgres
       - DB_PORT=5432
