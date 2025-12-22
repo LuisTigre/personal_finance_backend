@@ -25,10 +25,10 @@ public class AuthProvider {
     @Value("${keycloak.admin-client-id:admin-cli}")
     private String kcAdminClientId;
 
-    @Value("${KEYCLOAK_ADMIN:admin}")
+    @Value("${keycloak.admin.username:admin}")
     private String kcAdminUsername;
 
-    @Value("${KEYCLOAK_ADMIN_PASSWORD:admin}")
+    @Value("${keycloak.admin.password:admin}")
     private String kcAdminPassword;
 
     public String getKcClientId() {
@@ -63,4 +63,3 @@ public class AuthProvider {
         return kcAdminPassword;
     }
 }
-

@@ -4,11 +4,12 @@ services:
     container_name: persfinance_app
     restart: on-failure
     ports:
-      - "${APP_PORT:-8080}:8080"
+      - "${APP_PORT:-80}:8080"
       - "5005:5005"
     env_file:
       - .env
     environment:
+      - SERVER_PORT=8080
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       # DB connectivity (service-name based)
       - DB_HOST=postgres
@@ -35,8 +36,8 @@ services:
       - KEYCLOAK_ADMIN_BASE=http://keycloak:8080/admin/realms/${KEYCLOAK_REALM}
       - KEYCLOAK_ADMIN_TOKEN_URI=http://keycloak:8080/realms/master/protocol/openid-connect/token
       - KEYCLOAK_ADMIN_CLIENT_ID=admin-cli
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,15 +66,19 @@ services:
     container_name: persfinance_keycloak
     command: start-dev --import-realm
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY_HEADERS: "xforwarded"
+
+      # Health / metrics
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
+
     ports:
-      - "${KEYCLOAK_PORT:-8888}:8080"
+      - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
       - ./keycloak/realm:/opt/keycloak/data/import:ro
     healthcheck:

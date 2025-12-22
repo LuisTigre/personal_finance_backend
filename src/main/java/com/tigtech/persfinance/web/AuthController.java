@@ -14,6 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -101,52 +102,14 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> me() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            return ResponseEntity.status(401).body(Map.of("authenticated", false));
-        }
-
-        MeResponse resp = new MeResponse();
-        resp.setAuthenticated(true);
-        resp.setName(auth.getName());
-        resp.setRoles(auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .filter(a -> a != null && !a.isBlank())
-                .sorted()
-                .collect(Collectors.toList()));
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof Jwt jwt) {
-            resp.setSubject(jwt.getSubject());
-            resp.setIssuer(jwt.getIssuer() != null ? jwt.getIssuer().toString() : null);
-            resp.setClientId(jwt.getClaimAsString("azp"));
-            resp.setUsername(firstNonBlank(
-                    jwt.getClaimAsString("preferred_username"),
-                    jwt.getClaimAsString("username"),
-                    jwt.getClaimAsString("email"),
-                    auth.getName()
-            ));
-            resp.setEmail(jwt.getClaimAsString("email"));
-
-            Instant iat = jwt.getIssuedAt();
-            Instant exp = jwt.getExpiresAt();
-            resp.setIssuedAt(iat != null ? iat.getEpochSecond() : null);
-            resp.setExpiresAt(exp != null ? exp.getEpochSecond() : null);
-
-            String scope = jwt.getClaimAsString("scope");
-            if (scope != null && !scope.isBlank()) {
-                resp.setScopes(List.of(scope.split("\\s+")));
-            } else {
-                resp.setScopes(Collections.emptyList());
-            }
-
-            // Do NOT return full claims by default (keep response minimal)
-            resp.setClaims(null);
-        }
-
-        return ResponseEntity.ok(resp);
+    public Object me(JwtAuthenticationToken auth) {
+        return Map.of(
+                "principal", auth.getName(),
+                "username", auth.getToken().getClaimAsString("preferred_username"),
+                "authorities", auth.getAuthorities().stream().map(a -> a.getAuthority()).toList()
+        );
     }
+
 
     private static String firstNonBlank(String... values) {
         if (values == null) return null;
