@@ -8,6 +8,7 @@ import com.tigtech.persfinance.service.KeycloakAuthService;
 import com.tigtech.persfinance.web.dto.*;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping(value = "/api/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -45,10 +46,10 @@ public class AuthController {
         this.keycloakAuthService = keycloakAuthService;
     }
 
-    @PostMapping("/register")
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email already in use");
+            return ResponseEntity.badRequest().body(Map.of("error", "Email already in use"));
         }
 
         User user = User.builder()
@@ -66,7 +67,7 @@ public class AuthController {
             keycloakAdminService.createUser(request);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body("User created locally but failed to create in Keycloak");
+                    .body(Map.of("error", "User created locally but failed to create in Keycloak"));
         }
 
         // hide password from response (using legacy setter for backward compatibility)
@@ -74,39 +75,41 @@ public class AuthController {
         return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/login")
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         if (request == null || request.getEmail() == null || request.getEmail().isBlank() ||
                 request.getPassword() == null || request.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body("email and password are required");
+            return ResponseEntity.badRequest().body(Map.of("error", "email and password are required"));
         }
 
         return keycloakAuthService.passwordGrant(request.getEmail(), request.getPassword());
     }
 
-    @PostMapping("/forgot")
+    @PostMapping(value = "/forgot", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> forgot(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        return ResponseEntity.ok().body("If the email exists, a reset link was sent (check console in dev)");
+        return ResponseEntity.ok().body(Map.of("message", "If the email exists, a reset link was sent (check console in dev)"));
     }
 
-    @PostMapping("/reset")
+    @PostMapping(value = "/reset", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> reset(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
-        return ResponseEntity.ok().body("Password reset processed");
+        return ResponseEntity.ok().body(Map.of("message", "Password reset processed"));
     }
 
     @GetMapping("/hello")
-    public String hello() {
-        return "Hello, World!";
+    public Map<String, String> hello() {
+        return Map.of("message", "Hello, World!");
     }
 
     @GetMapping("/me")
-    public Object me(JwtAuthenticationToken auth) {
+    public Map<String, Object> me(JwtAuthenticationToken auth) {
         return Map.of(
-                "principal", auth.getName(),
+                "authenticated", true,
+                "subject", auth.getName(),
                 "username", auth.getToken().getClaimAsString("preferred_username"),
-                "authorities", auth.getAuthorities().stream().map(a -> a.getAuthority()).toList()
+                "email", auth.getToken().getClaimAsString("email"),
+                "roles", auth.getAuthorities().stream().map(a -> a.getAuthority()).toList()
         );
     }
 

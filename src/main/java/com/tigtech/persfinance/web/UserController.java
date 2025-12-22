@@ -4,16 +4,18 @@ import com.tigtech.persfinance.domain.User;
 import com.tigtech.persfinance.repository.UserRepository;
 import com.tigtech.persfinance.storage.StorageService;
 import com.tigtech.persfinance.web.dto.UserResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping(value = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserController {
 
     private final UserRepository userRepository;
@@ -45,7 +47,7 @@ public class UserController {
                 userRepository.save(user);
                 return ResponseEntity.ok().body(new UserResponse());
             } catch (Exception e) {
-                return ResponseEntity.internalServerError().body("Upload failed");
+                return ResponseEntity.internalServerError().body(Map.of("error", "Upload failed"));
             }
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
