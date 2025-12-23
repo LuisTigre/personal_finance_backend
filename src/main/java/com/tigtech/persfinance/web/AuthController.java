@@ -71,7 +71,7 @@ public class AuthController {
         }
 
         // hide password from response (using legacy setter for backward compatibility)
-        user.setSenha(null);
+        user.setPassword(null);
         return ResponseEntity.ok(user);
     }
 

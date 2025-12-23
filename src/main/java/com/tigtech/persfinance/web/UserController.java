@@ -43,7 +43,7 @@ public class UserController {
         return userRepository.findById(id).map(user -> {
             try {
                 String url = storageService.uploadUserPhoto(file, String.valueOf(user.getId()));
-                user.setFotoUrl(url);
+                user.setPhotoUrl(url);
                 userRepository.save(user);
                 return ResponseEntity.ok().body(new UserResponse());
             } catch (Exception e) {
@@ -58,9 +58,9 @@ public class UserController {
         r.setNome(u.getFirstName());
         r.setSobrenome(u.getLastName());
         r.setEmail(u.getEmail());
-        r.setFotoUrl(u.getFotoUrl());
+        r.setFotoUrl(u.getPhotoUrl());
         r.setRole(u.getRole());
-        r.setAtivo(u.isAtivo());
+        r.setAtivo(u.isActive());
         return r;
     }
 }

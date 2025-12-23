@@ -18,37 +18,41 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nome", nullable = false)
+    @Column(name = "first_name", nullable = false)
     private String firstName;
 
-    @Column(name = "sobrenome", nullable = false)
+    @Column(name = "last_name", nullable = false)
     private String lastName;
 
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(name = "senha", nullable = true)
+    @Column(name = "password", nullable = true)
     private String password; // BCrypt hashed password
 
     @Column(nullable = false)
+    @Builder.Default
     private String provider = "local"; // local or google
 
     @Column(name = "provider_id")
     private String providerId;
 
-    @Column(name = "foto_url")
-    private String fotoUrl;
+    @Column(name = "photo_url")
+    private String photoUrl;
 
     @Column(nullable = false)
+    @Builder.Default
     private String role = "ROLE_USER";
 
-    @Column(name = "ativo", nullable = false)
+    @Column(name = "active", nullable = false)
+    @Builder.Default
     private boolean active = true;
 
-    @Column(name = "data_criacao", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "data_atualizacao")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist
@@ -65,22 +69,22 @@ public class User {
     // Backward-compatible accessors for legacy Portuguese names used elsewhere.
     // Marked with @JsonIgnore so they are not serialized in API responses.
     @JsonIgnore
-    public String getSenha() {
+    public String getPassword() {
         return this.password;
     }
 
     @JsonIgnore
-    public void setSenha(String senha) {
-        this.password = senha;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     @JsonIgnore
-    public boolean isAtivo() {
+    public boolean isActive() {
         return this.active;
     }
 
     @JsonIgnore
-    public boolean getAtivo() {
+    public boolean getActive() {
         return this.active;
     }
 }

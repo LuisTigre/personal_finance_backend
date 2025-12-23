@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
         PasswordResetToken prt = t.get();
         if (prt.isExpired()) return;
         User user = prt.getUser();
-        user.setSenha(passwordEncoder.encode(request.getNovaSenha()));
+        user.setPassword(passwordEncoder.encode(request.getNovaSenha()));
         userRepository.save(user);
         tokenRepository.delete(prt);
     }
