@@ -92,12 +92,28 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable());
 
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/api/auth/me").authenticated()
-                .anyRequest().denyAll()
+                // Public auth endpoints
+                .requestMatchers(HttpMethod.POST,
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/forgot",
+                        "/api/auth/reset"
+                ).permitAll()
+
+                // Public GET
+                .requestMatchers(HttpMethod.GET,
+                        "/api/auth/hello",
+                        "/actuator/health",
+                        "/actuator/mappings"
+                ).permitAll()
+
+                // Protected
+                .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+
+                // Everything else
+                .anyRequest().authenticated()
         );
+
 
         return http.build();
     }

@@ -1,7 +1,7 @@
 
 
 ####### LOGIN (KNOWN KC USER) ########
-POST http://localhost:8080/api/auth/login
+POST http://localhost:8081/api/auth/login
 Content-Type: application/json; charset=utf-8
 Accept: application/json
 
@@ -11,14 +11,14 @@ Accept: application/json
 }
 
 ########  REGISTER USER ########
-POST http://localhost:8080/api/auth/register
+POST http://localhost:8081/api/auth/register
 Content-Type: application/json; charset=utf-8
 Accept: application/json
 
 {
-  "firstName": "Henry",
-  "lastName": "Fordes",
-  "email": "ford12@mail.com",
+  "firstName": "Lewis",
+  "lastName": "Tigger",
+  "email": "luistigre25@hotmail.com",
   "password": "tigger123"
 }
 
