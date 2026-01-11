@@ -9,6 +9,7 @@ services:
     env_file:
       - .env
     environment:
+      # Inside the 'app' service environment:
       - SERVER_PORT=8080
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       # DB connectivity (service-name based)
@@ -25,19 +26,12 @@ services:
 
       # Keycloak (inside docker network)
       - KEYCLOAK_BASE_URL=http://keycloak:8080
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}
-      - KEYCLOAK_JWKS_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
-      - KEYCLOAK_TOKEN_URI=http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
-
-      # AuthProvider specific config (overriding localhost defaults for Docker)
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-personal-finance-api}
-      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-personal-finance-secret}
-      - KEYCLOAK_ADMIN_BASE=http://keycloak:8080/admin/realms/${KEYCLOAK_REALM}
-      - KEYCLOAK_ADMIN_TOKEN_URI=http://keycloak:8080/realms/master/protocol/openid-connect/token
-      - KEYCLOAK_ADMIN_CLIENT_ID=admin-cli
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_REALM=Persfin
+      - KEYCLOAK_ADMIN_CLIENT_ID=persfinance-admin
+      - KEYCLOAK_ADMIN_CLIENT_SECRET=persfinance-admin-secret
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8080/realms/Persfin
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/Persfin/protocol/openid-connect/certs
+      
     depends_on:
       postgres:
         condition: service_healthy

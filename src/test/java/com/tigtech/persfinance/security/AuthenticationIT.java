@@ -1,6 +1,7 @@
 package com.tigtech.persfinance.security;
 
 import com.tigtech.persfinance.domain.User;
+import com.tigtech.persfinance.domain.UserStatus;
 import com.tigtech.persfinance.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,17 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
-// Provide test properties to avoid circular placeholder resolution for KEYCLOAK_ADMIN during context startup
-@SpringBootTest(properties = {
-        "keycloak.admin.username=admin",
-        "keycloak.admin.password=admin",
-        // provide sensible defaults so other Keycloak-related @Value placeholders resolve during tests
-        "keycloak.client-id=personal-finance-api",
-        "keycloak.client-secret=personal-finance-secret",
-        "keycloak.token-uri=http://localhost:8888/realms/Persfin/protocol/openid-connect/token",
-        "keycloak.admin-base=http://localhost:8888/admin/realms/Persfin",
-        "keycloak.admin-token-uri=http://localhost:8888/realms/master/protocol/openid-connect/token"
-})
+@SpringBootTest
 @ActiveProfiles("test")
 public class AuthenticationIT {
 
@@ -56,57 +47,47 @@ public class AuthenticationIT {
 
         userRepository.deleteAll();
         User u = User.builder()
-                .firstName("Alice")
-                .lastName("Doe")
+                .displayName("Alice Doe")
                 .email("alice@example.com")
-                .password("x")
-                .provider("local")
-                .role("ROLE_USER")
-                .active(true)
+                .keycloakSub("user-sub")
+                .status(UserStatus.ACTIVE)
                 .build();
         userRepository.save(u);
 
         User admin = User.builder()
-                .firstName("Admin")
-                .lastName("User")
+                .displayName("Admin User")
                 .email("admin@example.com")
-                .password("x")
-                .provider("local")
-                .role("ROLE_ADMIN")
-                .active(true)
+                .keycloakSub("admin-sub")
+                .status(UserStatus.ACTIVE)
                 .build();
         userRepository.save(admin);
     }
 
     @Test
     void protectedEndpoint_withoutToken_returns401() throws Exception {
-        Optional<User> anyUser = userRepository.findByEmail("alice@example.com");
-        Long id = anyUser.map(User::getId).orElse(1L);
-        mockMvc.perform(get("/api/users/" + id).accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/me").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void protectedEndpoint_withValidUserToken_returns200() throws Exception {
-        Optional<User> anyUser = userRepository.findByEmail("alice@example.com");
-        Long id = anyUser.map(User::getId).orElse(1L);
-        mockMvc.perform(get("/api/users/" + id)
+    void user_can_access_me_endpoint() throws Exception {
+        mockMvc.perform(get("/api/me")
                         .header("Authorization", "Bearer good-user")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void adminOnlyEndpoint_withUserToken_returns403() throws Exception {
-        mockMvc.perform(get("/api/users")
+    void admin_route_blocks_non_admin() throws Exception {
+        mockMvc.perform(get("/admin/ping")
                         .header("Authorization", "Bearer good-user")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void adminOnlyEndpoint_withAdminToken_returns200() throws Exception {
-        mockMvc.perform(get("/api/users")
+    void admin_route_allows_admin() throws Exception {
+        mockMvc.perform(get("/admin/ping")
                         .header("Authorization", "Bearer good-admin")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
