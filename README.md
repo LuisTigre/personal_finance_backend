@@ -1,5 +1,25 @@
 # personal_finance_app
 
+## Prerequisites
+
+1.  **Java 17+**
+2.  **Docker & Docker Compose**
+3.  **Tesseract OCR** (Required for Receipt OCR feature)
+
+### Installing Tesseract
+
+#### Windows (Development)
+1.  Download the installer from [UB-Mannheim/tesseract/wiki](https://github.com/UB-Mannheim/tesseract/wiki).
+2.  During installation, expand **Additional Script Data** and select **Polish (pol)**.
+3.  Add the installation directory (e.g., `C:\Program Files\Tesseract-OCR`) to your system **PATH**.
+4.  Configure `app.ocr.tesseractPath` in `application.properties` if it's not simply `tesseract`.
+
+#### Linux / Docker
+Our Dockerfile has been updated to include Tesseract:
+```dockerfile
+RUN apt-get update && apt-get install -y tesseract-ocr tesseract-ocr-pol
+```
+
 ## Authentication & Authorization (Resource Server Mode)
 - Frontend authenticates directly with Keycloak (Authorization Code + PKCE).
 - Backend is a JWT/OIDC resource server only: expects `Authorization: Bearer <access_token>` on protected routes.
