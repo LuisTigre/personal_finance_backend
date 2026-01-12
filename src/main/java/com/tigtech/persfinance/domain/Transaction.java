@@ -53,6 +53,17 @@ public class Transaction {
     @Column
     private String description;
 
+    @Column(length = 120)
+    private String merchant;
+
+    @Column(name = "is_itemized", nullable = false)
+    @Builder.Default
+    private boolean isItemized = false;
+
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<TransactionItem> items = new java.util.ArrayList<>();
+
     // For EXPENSE / INCOME
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id")

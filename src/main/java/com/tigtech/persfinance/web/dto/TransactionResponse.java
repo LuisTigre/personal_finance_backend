@@ -20,6 +20,9 @@ public class TransactionResponse {
     private Instant transactionDate;
     private String category;
     private String description;
+    private String merchant;
+    private boolean isItemized;
+    private int itemCount;
     private UUID walletId;
     private UUID fromWalletId;
     private UUID toWalletId;

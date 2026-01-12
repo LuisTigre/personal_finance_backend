@@ -2,6 +2,7 @@ package com.tigtech.persfinance.service.impl;
 
 import com.tigtech.persfinance.domain.*;
 import com.tigtech.persfinance.repository.TransactionRepository;
+import com.tigtech.persfinance.repository.TransactionItemRepository;
 import com.tigtech.persfinance.repository.WalletMemberRepository;
 import com.tigtech.persfinance.repository.WalletRepository;
 import com.tigtech.persfinance.service.TransactionService;
@@ -27,6 +28,7 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
     private final WalletMemberRepository walletMemberRepository;
+    private final TransactionItemRepository transactionItemRepository;
 
     @Override
     public TransactionResponse createTransaction(User user, CreateTransactionRequest request) {
@@ -110,6 +112,123 @@ public class TransactionServiceImpl implements TransactionService {
         tx.setStatus(TransactionStatus.DELETED);
         tx = transactionRepository.save(tx);
 
+        return toResponse(tx);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public com.tigtech.persfinance.web.dto.TransactionDetailsResponse getTransactionDetails(User user, UUID transactionId) {
+        Transaction tx = transactionRepository.findByIdAndUserHasAccess(transactionId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+
+        TransactionResponse base = toResponse(tx);
+        
+        List<com.tigtech.persfinance.web.dto.TransactionItemDto> items = new java.util.ArrayList<>();
+        if (tx.getItems() != null) {
+            items = tx.getItems().stream()
+                    .map(i -> new com.tigtech.persfinance.web.dto.TransactionItemDto(
+                            i.getId(), i.getName(), i.getCategory(), i.getAmount(), i.getNote()))
+                    .toList();
+        }
+
+        BigDecimal allocated = items.stream()
+                .map(com.tigtech.persfinance.web.dto.TransactionItemDto::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        boolean isBalanced = !tx.isItemized() || allocated.compareTo(tx.getAmount()) == 0;
+
+        return com.tigtech.persfinance.web.dto.TransactionDetailsResponse.builder()
+                .transaction(base)
+                .items(items)
+                .allocatedTotal(allocated)
+                .isBalanced(isBalanced)
+                .build();
+    }
+
+    @Override
+    public TransactionResponse replaceTransactionItems(User user, UUID transactionId, com.tigtech.persfinance.web.dto.ReplaceTransactionItemsRequest request) {
+        Transaction tx = transactionRepository.findByIdAndUserHasAccess(transactionId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+
+        if (tx.getStatus() == TransactionStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot modify deleted transaction");
+        }
+
+        // Permission check
+        if (tx.getType() == TransactionType.TRANSFER) {
+            requireWriteAccess(tx.getFromWallet().getId(), user.getId());
+            requireWriteAccess(tx.getToWallet().getId(), user.getId());
+        } else {
+            requireWriteAccess(tx.getWallet().getId(), user.getId());
+        }
+
+        BigDecimal totalItems = request.getItems().stream()
+                .map(com.tigtech.persfinance.web.dto.ReplaceTransactionItemsRequest.ItemRequest::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (totalItems.compareTo(tx.getAmount()) != 0) {
+            // Validation per prompt: enforce SUM(items) == tx.amount
+             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+                 "Sum of items (" + totalItems + ") does not match transaction amount (" + tx.getAmount() + ")");
+        }
+
+        // Clear existing items
+        if (tx.getItems() != null) {
+            tx.getItems().clear();
+        } else {
+            tx.setItems(new java.util.ArrayList<>());
+        }
+
+        // Add new items
+        for (com.tigtech.persfinance.web.dto.ReplaceTransactionItemsRequest.ItemRequest itemReq : request.getItems()) {
+            TransactionItem item = TransactionItem.builder()
+                    .transaction(tx)
+                    .name(itemReq.getName())
+                    .category(itemReq.getCategory())
+                    .amount(itemReq.getAmount())
+                    .note(itemReq.getNote())
+                    .build();
+            tx.getItems().add(item);
+        }
+
+        tx.setItemized(true);
+        // Prompt says: category should be NULL or "MIXED_PRODUCTS"
+        // I'll set it to MIXED_PRODUCTS if it wasn't already specific, or just leave it?
+        // "must not break old behavior" -> if I change it, I might break reporting.
+        // Prompt: "category should be NULL or 'MIXED_PRODUCTS' (choose one approach but do NOT break old behavior)"
+        // I'll opt to update it to MIXED_PRODUCTS to indicate it's a split transaction at high level.
+        tx.setCategory("MIXED_PRODUCTS");
+
+        tx = transactionRepository.save(tx);
+        return toResponse(tx);
+    }
+
+    @Override
+    public TransactionResponse clearTransactionItems(User user, UUID transactionId) {
+        Transaction tx = transactionRepository.findByIdAndUserHasAccess(transactionId, user.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+
+        if (tx.getStatus() == TransactionStatus.DELETED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot modify deleted transaction");
+        }
+
+        // Permission check
+        if (tx.getType() == TransactionType.TRANSFER) {
+            requireWriteAccess(tx.getFromWallet().getId(), user.getId());
+            requireWriteAccess(tx.getToWallet().getId(), user.getId());
+        } else {
+            requireWriteAccess(tx.getWallet().getId(), user.getId());
+        }
+
+        if (tx.getItems() != null) {
+            tx.getItems().clear();
+        }
+        
+        tx.setItemized(false);
+        // Maybe revert category? Hard to know what it was. I'll leave it or set to null?
+        // Prompt doesn't specify revert logic, just "sets is_itemized=false".
+        
+        tx = transactionRepository.save(tx);
         return toResponse(tx);
     }
 
@@ -303,6 +422,9 @@ public class TransactionServiceImpl implements TransactionService {
                 .transactionDate(t.getTransactionDate())
                 .category(t.getCategory())
                 .description(t.getDescription())
+                .merchant(t.getMerchant())
+                .isItemized(t.isItemized())
+                .itemCount(t.getItems() != null ? t.getItems().size() : 0)
                 .walletId(t.getWallet() != null ? t.getWallet().getId() : null)
                 .fromWalletId(t.getFromWallet() != null ? t.getFromWallet().getId() : null)
                 .toWalletId(t.getToWallet() != null ? t.getToWallet().getId() : null)

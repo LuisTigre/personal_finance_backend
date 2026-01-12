@@ -44,6 +44,26 @@ public class TransactionController {
         return transactionService.listTransactions(user, walletId, from, to, type, q, status);
     }
 
+    @GetMapping("/{transactionId}")
+    public com.tigtech.persfinance.web.dto.TransactionDetailsResponse getDetails(@PathVariable UUID transactionId, JwtAuthenticationToken principal) {
+        User user = getUser(principal);
+        return transactionService.getTransactionDetails(user, transactionId);
+    }
+
+    @PutMapping("/{transactionId}/items")
+    public TransactionResponse replaceItems(@PathVariable UUID transactionId,
+                                            @Valid @RequestBody com.tigtech.persfinance.web.dto.ReplaceTransactionItemsRequest request,
+                                            JwtAuthenticationToken principal) {
+        User user = getUser(principal);
+        return transactionService.replaceTransactionItems(user, transactionId, request);
+    }
+
+    @DeleteMapping("/{transactionId}/items")
+    public TransactionResponse clearItems(@PathVariable UUID transactionId, JwtAuthenticationToken principal) {
+        User user = getUser(principal);
+        return transactionService.clearTransactionItems(user, transactionId);
+    }
+
     @DeleteMapping("/{transactionId}")
     public TransactionResponse delete(@PathVariable UUID transactionId, JwtAuthenticationToken principal) {
         User user = getUser(principal);

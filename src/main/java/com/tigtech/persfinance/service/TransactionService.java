@@ -21,4 +21,11 @@ public interface TransactionService {
                                             String status);
 
     TransactionResponse softDeleteTransaction(User user, UUID transactionId);
+
+    com.tigtech.persfinance.web.dto.TransactionDetailsResponse getTransactionDetails(User user, UUID transactionId);
+
+    TransactionResponse replaceTransactionItems(User user, UUID transactionId, com.tigtech.persfinance.web.dto.ReplaceTransactionItemsRequest request);
+
+    TransactionResponse clearTransactionItems(User user, UUID transactionId);
 }
+
