@@ -16,6 +16,77 @@ import java.util.UUID;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID> {
 
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+            "WHERE t.createdBy.id = :userId " +
+            "AND t.type = com.tigtech.persfinance.domain.TransactionType.EXPENSE " +
+            "AND t.isItemized = false " +
+            "AND LOWER(t.category) = LOWER(:category) " +
+            "AND t.transactionDate >= :start AND t.transactionDate < :end")
+    java.math.BigDecimal sumNonItemizedExpenses(@Param("userId") UUID userId,
+                                                @Param("category") String category,
+                                                @Param("start") Instant start,
+                                                @Param("end") Instant end);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t " +
+            "WHERE t.createdBy.id = :userId " +
+            "AND t.type = :type " +
+            "AND t.transactionDate >= :start AND t.transactionDate < :end")
+    java.math.BigDecimal sumTotalByTypeAndDate(@Param("userId") UUID userId,
+                                               @Param("type") com.tigtech.persfinance.domain.TransactionType type,
+                                               @Param("start") Instant start,
+                                               @Param("end") Instant end);
+
+    @Query("SELECT t FROM Transaction t WHERE t.createdBy.id = :userId ORDER BY t.transactionDate DESC, t.createdAt DESC")
+    List<Transaction> findRecentTransactions(@Param("userId") UUID userId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT t.category as category, SUM(t.amount) as total " +
+            "FROM Transaction t " +
+            "WHERE t.createdBy.id = :userId " +
+            "AND t.type = com.tigtech.persfinance.domain.TransactionType.EXPENSE " +
+            "AND t.isItemized = false " +
+            "AND t.transactionDate >= :start AND t.transactionDate < :end " +
+            "GROUP BY t.category")
+    List<Object[]> sumNonItemizedExpensesByCategory(@Param("userId") UUID userId,
+                                                    @Param("start") Instant start,
+                                                    @Param("end") Instant end);
+
+    @Query("SELECT t.category, SUM(t.amount) FROM Transaction t " +
+            "WHERE t.createdBy.id = :userId " +
+            "AND t.type = com.tigtech.persfinance.domain.TransactionType.INCOME " +
+            "AND t.transactionDate >= :start AND t.transactionDate < :end " +
+            "GROUP BY t.category")
+    List<Object[]> sumIncomeByCategory(@Param("userId") UUID userId,
+                                       @Param("start") Instant start,
+                                       @Param("end") Instant end);
+
+    // Native query or JPQL? JPQL is safer for Instant usually, but grouping by date part of instant depends on DB.
+    // For MVP and H2/Postgres compatibility, we might fetch and group in memory if needed, but SQL is better.
+    // Postgres: cast(transaction_date as date)
+    // JPQL doesn't standarize 'date()' function well across providers without function registration.
+    // Using native query for "day" truncation is safest for Postgres.
+    @Query(value = "SELECT CAST(t.transaction_date AS DATE) as tdate, SUM(t.amount) " +
+            "FROM transactions t " +
+            "WHERE t.created_by_id = :userId " +
+            "AND t.type = 'EXPENSE' " +
+            "AND t.transaction_date >= :start AND t.transaction_date < :end " +
+            "GROUP BY CAST(t.transaction_date AS DATE) " +
+            "ORDER BY tdate ASC", nativeQuery = true)
+    List<Object[]> getDailyExpenseTrendNative(@Param("userId") UUID userId,
+                                        @Param("start") Instant start,
+                                        @Param("end") Instant end);
+
+    @Query("SELECT t.merchant, SUM(t.amount), COUNT(t) FROM Transaction t " +
+            "WHERE t.createdBy.id = :userId " +
+            "AND t.type = com.tigtech.persfinance.domain.TransactionType.EXPENSE " +
+            "AND t.merchant IS NOT NULL " +
+            "AND t.transactionDate >= :start AND t.transactionDate < :end " +
+            "GROUP BY t.merchant " +
+            "ORDER BY SUM(t.amount) DESC")
+    List<Object[]> getTopMerchants(@Param("userId") UUID userId,
+                                   @Param("start") Instant start,
+                                   @Param("end") Instant end,
+                                   org.springframework.data.domain.Pageable pageable);
+
     @Query("""
         SELECT t FROM Transaction t
         WHERE t.id = :transactionId

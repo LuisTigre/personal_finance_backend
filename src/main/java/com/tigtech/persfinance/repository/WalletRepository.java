@@ -13,4 +13,7 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     
     @Query("SELECT DISTINCT w FROM Wallet w JOIN w.members m WHERE m.user.id = :userId")
     List<Wallet> findAllByUserId(UUID userId);
+
+    @Query("SELECT COALESCE(SUM(w.currentBalance), 0) FROM Wallet w JOIN w.members m WHERE m.user.id = :userId AND w.status = com.tigtech.persfinance.domain.WalletStatus.ACTIVE")
+    java.math.BigDecimal sumTotalBalanceByUser(@org.springframework.data.repository.query.Param("userId") UUID userId);
 }

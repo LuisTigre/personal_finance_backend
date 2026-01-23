@@ -5,6 +5,7 @@ import com.tigtech.persfinance.repository.UserRepository;
 import com.tigtech.persfinance.service.OcrService;
 import com.tigtech.persfinance.service.ReceiptConfirmService;
 import com.tigtech.persfinance.service.ReceiptParserService;
+import com.tigtech.persfinance.service.dto.OcrResult;
 import com.tigtech.persfinance.web.dto.ConfirmReceiptRequest;
 import com.tigtech.persfinance.web.dto.ConfirmReceiptResponse;
 import com.tigtech.persfinance.web.dto.ReceiptOcrDraftResponse;
@@ -18,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "/api/receipts", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -35,10 +38,45 @@ public class ReceiptController {
         getUser(principal);
 
         try {
-            String ocrText = ocrService.extractText(file);
-            return receiptParserService.parse(ocrText);
+            OcrResult ocrResult = ocrService.processUpload(file);
+            
+            // Fail-safe Guard (Req 4): Do not finalize totals if OCR incomplete
+            boolean isComplete = ocrResult.getStatus() == OcrResult.OcrStatus.SUCCESS;
+            
+            ReceiptOcrDraftResponse response;
+            if (isComplete) {
+                // Use the new overloaded parse method that accepts OcrResult
+                response = receiptParserService.parse(ocrResult);
+            } else {
+                // Return barebones response with error status
+                response = ReceiptOcrDraftResponse.builder()
+                        .ocrText(ocrResult.getFullText())
+                        .fullText(ocrResult.getFullText())
+                        .items(List.of())
+                        .warnings(List.of("OCR Incomplete or Failed: " + ocrResult.getStatus()))
+                        .build();
+            }
+            
+            // Enrich response with metadata (Req 8)
+            response.setFileType(ocrResult.getFileType());
+            response.setPdfPageCount(ocrResult.getTotalPageCount());
+            response.setOcrProcessedPages(ocrResult.getProcessedPageCount());
+            response.setStatus(ocrResult.getStatus().name());
+
+            // Enrich response with pages
+            if (ocrResult.getPages() != null) {
+                response.setPages(ocrResult.getPages().stream()
+                        .map(page -> ReceiptOcrDraftResponse.PageOcrResult.builder()
+                                .pageIndex(page.getPageIndex())
+                                .text(page.getText())
+                                .build())
+                        .collect(Collectors.toList()));
+            }
+            
+            return response;
+
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "OCR processing failed: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error processing file", e);
         }
     }
 

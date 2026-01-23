@@ -32,6 +32,9 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8080/realms/Persfin
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/Persfin/protocol/openid-connect/certs
       
+    volumes:
+      - ./uploads:/app/uploads
+      - ./ocr-dumps:/app/ocr-dumps
     depends_on:
       postgres:
         condition: service_healthy
